@@ -2,6 +2,11 @@
 
 Este documento resume los hallazgos del análisis exploratorio (EDA) realizado sobre el dataset hospitalario `healthcare_dataset.csv`, cubriendo calidad de datos, validaciones, transformaciones y observaciones clave.
 
+## Autor
+
+**Jose Defaz**
+josejoel.defaz@gmail.com
+
 ---
 
 ## 📋 Descripción General del Dataset

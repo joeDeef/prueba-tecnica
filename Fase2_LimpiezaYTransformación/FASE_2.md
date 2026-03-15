@@ -5,6 +5,11 @@ Este documento detalla todas las decisiones, transformaciones y validaciones apl
 **Input:** `healthcare_dataset.csv` — 55,500 registros · 15 columnas
 **Output:** `healthcare_dataset_clean.csv` — 54,966 registros · 17 columnas
 
+## Autor
+
+**Jose Defaz**
+josejoel.defaz@gmail.com
+
 ---
 
 ## 🗂️ Resumen del Pipeline de Limpieza
