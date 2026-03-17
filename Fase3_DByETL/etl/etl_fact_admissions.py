@@ -48,8 +48,6 @@ def run_etl_fact(df, engine):
     df['sk_date_admision'] = df['date_of_admission'].dt.strftime('%Y%m%d').astype(int)
     df['sk_date_discharge'] = df['discharge_date'].dt.strftime('%Y%m%d').astype(int)
     df['age_group'] = df['age'].apply(get_age_group)
-    df['billing_nature'] = np.where(df['billing_amount'] < 0, 'Ajuste', 'Ingreso')
-    df['billing_amount_abs'] = df['billing_amount'].abs()
     df['day_of_stay'] = (df['discharge_date'] - df['date_of_admission']).dt.days
 
     # PREPARACIÓN DEL DATAFRAME FINAL
@@ -69,7 +67,7 @@ def run_etl_fact(df, engine):
     fact_df['age_at_admission'] = df['age']
     fact_df['age_group'] = df['age_group']
     fact_df['day_of_stay'] = df['day_of_stay']
-    fact_df['billing_amount'] = df['billing_amount_abs']
+    fact_df['billing_amount'] = df['billing_amount']
     fact_df['billing_nature'] = df['billing_nature']
     fact_df['admission_type'] = df['admission_type']
     fact_df['medication'] = df['medication']
