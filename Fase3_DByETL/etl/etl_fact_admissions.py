@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from datetime import datetime
 
 def get_age_group(age):
@@ -11,50 +10,38 @@ def get_age_group(age):
     if age <= 60: return 'Adulto'
     return 'Adulto mayor'
 
-def run_etl_fact(df, engine):
-
-    print("\nIniciando ETL: fact_admissions (Subiendo a la nube)...")
+def run_etl_fact(df, adapter):
+    print("\nIniciando ETL: fact_admissions...")
     
-    # Asegurar tipos de datos de fecha
+    # Asegurar tipos de datos
     df['date_of_admission'] = pd.to_datetime(df['date_of_admission'])
     df['discharge_date'] = pd.to_datetime(df['discharge_date'])
 
-    # Obtener IDs de las Dimensiones desde Supabase
-    # Usamos comillas dobles para evitar errores de sensibilidad a mayúsculas en Postgres
-    dim_patient = pd.read_sql('SELECT "id_patient", "name", "gender", "blood_type" FROM "dim_patient"', engine)
-    dim_doctor = pd.read_sql('SELECT "id_doctor", "name" FROM "dim_doctor"', engine)
-    dim_hospital = pd.read_sql('SELECT "id_hospital", "name" FROM "dim_hospital"', engine)
-    dim_insurance = pd.read_sql('SELECT "id_insurance", "name" FROM "dim_insurance_provider"', engine)
-    dim_medical = pd.read_sql('SELECT "id_medical_condition", "medical_condition" FROM "dim_medical_condition"', engine)
+    # Obtener Dimensiones desde la DB vía Adapter para mapear IDs
+    d_patient = adapter.get_existing_data('dim_patient', ["id_patient", "name", "gender", "blood_type"])
+    d_doctor = adapter.get_existing_data('dim_doctor', ["id_doctor", "name"])
+    d_hospital = adapter.get_existing_data('dim_hospital', ["id_hospital", "name"])
+    d_insurance = adapter.get_existing_data('dim_insurance_provider', ["id_insurance", "name"])
+    d_medical = adapter.get_existing_data('dim_medical_condition', ["id_medical_condition", "medical_condition"])
 
-    # MAPEOS (Cruzar CSV con IDs de la DB)
+    # Mapeos (Cruces para obtener Surrogate Keys)
+    df = df.merge(d_patient, on=['name', 'gender', 'blood_type'], how='left')
+    df = df.merge(d_doctor, left_on='doctor', right_on='name', how='left', suffixes=('', '_dr'))
+    df = df.merge(d_hospital, left_on='hospital', right_on='name', how='left', suffixes=('', '_hosp'))
+    df = df.merge(d_insurance, left_on='insurance_provider', right_on='name', how='left', suffixes=('', '_ins'))
+    df = df.merge(d_medical, on='medical_condition', how='left')
 
-    # Paciente
-    df = df.merge(dim_patient, on=['name', 'gender', 'blood_type'], how='left')
-    
-    # Doctor
-    df = df.merge(dim_doctor, left_on='doctor', right_on='name', how='left', suffixes=('', '_dr'))
-    
-    # Hospital
-    df = df.merge(dim_hospital, left_on='hospital', right_on='name', how='left', suffixes=('', '_hosp'))
-    
-    # Seguro
-    df = df.merge(dim_insurance, left_on='insurance_provider', right_on='name', how='left', suffixes=('', '_ins'))
-    
-    # Condición Médica
-    df = df.merge(dim_medical, on='medical_condition', how='left')
-
-    # TRANSFORMACIONES Y MEDIDAS
+    # Transformaciones de negocio
     df['sk_date_admision'] = df['date_of_admission'].dt.strftime('%Y%m%d').astype(int)
     df['sk_date_discharge'] = df['discharge_date'].dt.strftime('%Y%m%d').astype(int)
     df['age_group'] = df['age'].apply(get_age_group)
     df['day_of_stay'] = (df['discharge_date'] - df['date_of_admission']).dt.days
 
-    # PREPARACIÓN DEL DATAFRAME FINAL
+    # Estructura final de la Fact Table
     fact_df = pd.DataFrame()
     fact_df['id_admissions'] = range(1, len(df) + 1)
     
-    # Llaves Foráneas (SKs)
+    # Llaves Foráneas
     fact_df['sk_date_admision'] = df['sk_date_admision']
     fact_df['sk_date_discharge'] = df['sk_date_discharge']
     fact_df['sk_patient'] = df['id_patient']
@@ -63,7 +50,7 @@ def run_etl_fact(df, engine):
     fact_df['sk_insurance_provider'] = df['id_insurance']
     fact_df['sk_medical_condition'] = df['id_medical_condition']
     
-    # Medidas y Datos
+    # Medidas
     fact_df['age_at_admission'] = df['age']
     fact_df['age_group'] = df['age_group']
     fact_df['day_of_stay'] = df['day_of_stay']
@@ -77,14 +64,7 @@ def run_etl_fact(df, engine):
     fact_df['fecha_carga'] = datetime.now()
     fact_df['active'] = 1
 
-    # CARGA A POSTGRESQL (Supabase)
-    fact_df.to_sql(
-        'fact_admissions', 
-        engine, 
-        if_exists='replace', 
-        index=False, 
-        method='multi', 
-        chunksize=1000
-    )
+    # Carga final
+    adapter.insert_dataframe(fact_df, 'fact_admissions', if_exists='replace')
     
-    print(f"¡Éxito! Se cargaron {len(fact_df)} registros en fact_admissions.")
+    print(f"¡Éxito! Se procesaron {len(fact_df)} registros en la Fact Table.")

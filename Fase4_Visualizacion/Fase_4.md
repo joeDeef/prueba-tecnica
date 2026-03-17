@@ -17,7 +17,7 @@ Con los datos limpios del [Modelo Dimensional](../Fase3_DByETL/docs/ModeloDimens
 
 *Figura 1: Vista general del tablero de control clínico y financiero.*
 
-El dahsboard para su visualizacion se puede revisar en el archivo: [Dashboard Power BI](./PruebaTécnica_DefazJoel.pbix))
+El dahsboard para su visualizacion se puede revisar en el archivo: [Dashboard Power BI](./PruebaTécnica_DefazJoel.pbix)) o en la web con el siguiente enlace: [Dashboard Power BI Web](https://app.powerbi.com/view?r=eyJrIjoiYmViYjE3NTktMWJkMy00OTc4LThhMGYtYWU1OGNhODg5OTJmIiwidCI6IjY4MmE0ZTZhLWE3N2YtNDk1OC1hM2FjLTllMjY2ZDE4YWEzNyIsImMiOjR9).
 
 ---
 
